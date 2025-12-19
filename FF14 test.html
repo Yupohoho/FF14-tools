@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14 Macro Helper | 巨集快捷生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #121212;
+            background-image: radial-gradient(circle at center, #1e1e1e 0%, #121212 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .macro-card {
+            background: rgba(42, 42, 42, 0.9);
+            border: 1px solid #3d3d3d;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        .ff14-input {
+            background: #0a0a0a;
+            border: 1px solid #444;
+            color: #fff;
+            transition: all 0.2s;
+        }
+        .ff14-input:focus {
+            border-color: #c9a227;
+            box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #c9a227 0%, #a6851e 100%);
+            color: #1a1a1a;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3);
+        }
+        .copy-toast {
+            visibility: hidden;
+            background-color: #c9a227;
+            color: #1a1a1a;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 9999px;
+            padding: 8px 24px;
+            position: fixed;
+            z-index: 100;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .copy-toast.show {
+            visibility: visible;
+            animation: slideUpFade 2s forwards;
+        }
+        @keyframes slideUpFade {
+            0% { opacity: 0; bottom: 20px; }
+            20% { opacity: 1; bottom: 40px; }
+            80% { opacity: 1; bottom: 40px; }
+            100% { opacity: 0; bottom: 50px; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center">
+    <div class="w-full max-w-4xl">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-black text-[#c9a227] mb-3 tracking-wider">FFXIV MACRO TOOL</h1>
+            <div class="h-1 w-24 bg-[#c9a227] mx-auto mb-4 rounded-full"></div>
+            <p class="text-gray-400 italic text-sm">FINAL FANTASY XIV 巨集快捷生成助手</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- 設定區 -->
+            <div class="lg:col-span-5 macro-card p-8 rounded-2xl">
+                <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <span class="w-2 h-6 bg-[#c9a227] mr-3 rounded-full"></span>
+                    配置參數
+                </h2>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">技能/物品名稱</label>
+                        <input type="text" id="skillName" placeholder="例如：醫治, 救療..." class="w-full p-3 rounded-xl ff14-input text-lg">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">施放對象 (Target)</label>
+                        <select id="targetType" class="w-full p-3 rounded-xl ff14-input">
+                            <optgroup label="通用">
+                                <option value="<t>">目前目標 &lt;t&gt;</option>
+                                <option value="<mo>">滑鼠懸停 &lt;mo&gt;</option>
+                                <option value="<f>">專注目標 &lt;f&gt;</option>
+                                <option value="<me>">自己 &lt;me&gt;</option>
+                            </optgroup>
+                            <optgroup label="小隊成員">
+                                <option value="<1>">#1 (自己) &lt;1&gt;</option>
+                                <option value="<2>">#2 (通常是坦) &lt;2&gt;</option>
+                                <option value="<3>">#3 (通常是坦) &lt;3&gt;</option>
+                                <option value="<4>">#4 (通常是補) &lt;4&gt;</option>
+                                <option value="<5>">#5 &lt;5&gt;</option>
+                                <option value="<6>">#6 &lt;6&gt;</option>
+                                <option value="<7>">#7 &lt;7&gt;</option>
+                                <option value="<8>">#8 &lt;8&gt;</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <label class="flex items-center p-3 rounded-xl bg-black/30 border border-gray-700 cursor-pointer hover:border-[#c9a227] transition-colors">
+                            <input type="checkbox" id="showIcon" checked class="w-4 h-4 rounded text-[#c9a227] bg-gray-900 border-gray-700 focus:ring-[#c9a227]">
+                            <span class="ml-3 text-sm">顯示圖示</span>
+                        </label>
+                        <label class="flex items-center p-3 rounded-xl bg-black/30 border border-gray-700 cursor-pointer hover:border-[#c9a227] transition-colors">
+                            <input type="checkbox" id="errorEcho" checked class="w-4 h-4 rounded text-[#c9a227] bg-gray-900 border-gray-700 focus:ring-[#c9a227]">
+                            <span class="ml-3 text-sm">隱藏錯誤</span>
+                        </label>
+                    </div>
+
+                    <button id="generateBtn" class="w-full btn-primary py-4 rounded-xl mt-4 uppercase tracking-tighter text-lg shadow-lg">
+                        生成指令碼
+                    </button>
+                </div>
+            </div>
+
+            <!-- 結果顯示區 -->
+            <div class="lg:col-span-7 flex flex-col">
+                <div class="macro-card p-8 rounded-2xl flex-grow flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <span class="w-2 h-6 bg-gray-500 mr-3 rounded-full"></span>
+                            巨集結果
+                        </h2>
+                        <span class="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-500 uppercase tracking-widest">Macro Output</span>
+                    </div>
+                    
+                    <textarea id="output" readonly class="w-full flex-grow p-4 rounded-xl ff14-input font-mono text-sm leading-relaxed mb-6 resize-none" placeholder="/ac 技能名稱 <2>..."></textarea>
+                    
+                    <button id="copyBtn" class="group flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 rounded-xl transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="Page 8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span>複製到剪貼簿</span>
+                    </button>
+                </div>
+                
+                <!-- 底部提示 -->
+                <div class="mt-6 px-4 py-3 bg-[#c9a227]/10 border border-[#c9a227]/30 rounded-xl">
+                    <p class="text-xs text-[#c9a227] leading-relaxed">
+                        <strong>提示：</strong> 戰鬥技能巨集會重複 10 次指令以模擬「技能隊列 (Queue)」，這能增加巨集在連打時的成功率，避免因動畫鎖死而施放失敗。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 常用範例區 -->
+        <div class="mt-12 text-center">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-[0.3em] mb-6">Quick Templates / 快速模板</p>
+            <div class="flex flex-wrap justify-center gap-3">
+                <button onclick="applyTemplate('復活', '<2>', true)" class="bg-blue-900/20 border border-blue-500/30 text-blue-400 px-6 py-2 rounded-full hover:bg-blue-500/20 transition-all text-sm font-bold">復活二號位 (坦)</button>
+                <button onclick="applyTemplate('縮圖', '<mo>', true)" class="bg-indigo-900/20 border border-indigo-500/30 text-indigo-400 px-6 py-2 rounded-full hover:bg-indigo-500/20 transition-all text-sm font-bold">滑鼠懸停 (補師向)</button>
+                <button onclick="applyTemplate('挑釁', '<t>', true)" class="bg-red-900/20 border border-red-500/30 text-red-400 px-6 py-2 rounded-full hover:bg-red-500/20 transition-all text-sm font-bold">挑釁 (含警報聲)</button>
+                <button onclick="applyTemplate('縮地', '<t>', true)" class="bg-emerald-900/20 border border-emerald-500/30 text-emerald-400 px-6 py-2 rounded-full hover:bg-emerald-500/20 transition-all text-sm font-bold">縮地目標</button>
+            </div>
+        </div>
+
+        <footer class="mt-16 pt-8 border-t border-gray-800 text-center text-gray-600 text-xs">
+            <p>© 2024 FFXIV Macro Helper - 祝您冒險愉快</p>
+        </footer>
+    </div>
+
+    <div id="toast" class="copy-toast">已複製到剪貼簿！</div>
+
+    <script>
+        const skillInput = document.getElementById('skillName');
+        const targetSelect = document.getElementById('targetType');
+        const showIconCheck = document.getElementById('showIcon');
+        const errorEchoCheck = document.getElementById('errorEcho');
+        const output = document.getElementById('output');
+        const generateBtn = document.getElementById('generateBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toast');
+
+        function generate() {
+            const skill = skillInput.value.trim() || "技能名稱";
+            const target = targetSelect.value;
+            let result = "";
+
+            if (showIconCheck.checked) {
+                result += `/micon "${skill}"\n`;
+            }
+            if (errorEchoCheck.checked) {
+                result += `/merror off\n`;
+            }
+
+            // 根據技能決定生成邏輯
+            if (skill === "挑釁") {
+                result += `/ac "挑釁" <t>\n`;
+                result += `/p 已對 <t> 使用挑釁！ <se.1>\n`;
+            } else {
+                for(let i=0; i<12; i++) {
+                    result += `/ac "${skill}" ${target}\n`;
+                }
+            }
+
+            output.value = result.trim();
+        }
+
+        function applyTemplate(name, target, icon) {
+            skillInput.value = name;
+            targetSelect.value = target;
+            showIconCheck.checked = icon;
+            generate();
+        }
+
+        generateBtn.addEventListener('click', generate);
+
+        copyBtn.addEventListener('click', () => {
+            if (!output.value) return;
+            output.select();
+            document.execCommand('copy');
+            
+            toast.className = "copy-toast show";
+            setTimeout(() => { toast.className = "copy-toast"; }, 2000);
+        });
+
+        // 初始生成
+        generate();
+    </script>
+</body>
+</html>
